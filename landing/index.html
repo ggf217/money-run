@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конверс-кит для селлера WB/Ozon · 64 промпта и живой калькулятор экономики</title>
+<meta name="description" content="64 промпта для карточек товара и калькулятор юнит-экономики. Посчитай прибыль до закупки. 490 рублей один раз.">
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500&family=Golos+Text:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ebe5e3; --surface:#e1dad7; --ink:#2b2622; --muted:#6a615d; --muted-deep:#4a423e;
+  --accent:#0f7d45; --accent-ink:#ffffff; --paper:#b7ada9;
+  --step-small:clamp(.8125rem,.79rem + .1vw,.875rem);
+  --step-body:clamp(1.0625rem,1rem + .25vw,1.1875rem);
+  --step-lead:clamp(1.25rem,1.1rem + .7vw,1.625rem);
+  --margin:32px; --stack:clamp(120px,13vw,210px);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-expo:cubic-bezier(.16,1,.3,1);
+  --ease-soft:cubic-bezier(.33,1,.68,1);
+  --t-press:140ms; --t-hover:180ms; --t-reveal:800ms;
+  --stagger-line:90ms; --stagger-item:70ms;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:"Work Sans","Golos Text",-apple-system,"Segoe UI",sans-serif;
+  font-size:var(--step-body);line-height:1.55;font-weight:400;overflow-x:clip}
+h1,h2,h3{font-weight:300;letter-spacing:-.035em;line-height:1.0}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+::selection{background:var(--accent);color:var(--accent-ink)}
+img{display:block}
+
+/* ХЕРО: две половины по тону */
+.hero{min-height:100svh;display:grid;grid-template-columns:1fr 1fr;position:relative}
+.hero-left{background:var(--ink);color:var(--bg);padding:40px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero-right{background:var(--surface);padding:40px;display:grid;place-items:center}
+.mark{position:absolute;top:40px;left:40px;font-size:15px;font-weight:500;letter-spacing:0}
+.mark small{color:var(--paper);font-weight:400;font-size:13px}
+.hero-nav{position:absolute;top:34px;right:36px;display:flex;gap:6px;font-size:15px}
+.hero-nav a{padding:10px 16px;background:var(--bg);color:var(--ink)}
+.hero-nav a:hover{background:var(--accent);color:var(--accent-ink)}
+.hero-left .mark{background:var(--ink)}
+.hero h1{font-size:clamp(30px,6vw,60px);font-weight:400;letter-spacing:-.03em;line-height:1.08}
+.hero-sub{margin-top:18px;font-size:var(--step-lead);color:var(--paper);max-width:44ch}
+.hero-btn{margin-top:30px;display:inline-block;background:var(--bg);color:var(--ink);padding:16px 26px;font-size:15px;font-weight:500;align-self:flex-start}
+.hero-btn:hover{background:var(--accent);color:var(--accent-ink)}
+.crumbs{margin-top:18px;font-size:var(--step-small);color:var(--paper)}
+
+/* ДВИЖЕНИЕ: сигнатура и входы */
+.lines .line{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.lines [data-line]{display:block}
+@media (prefers-reduced-motion: no-preference){
+  .js .hero [data-line]{transform:translateY(105%);animation:line-up 900ms var(--ease-expo) forwards;animation-delay:calc(150ms + var(--i)*var(--stagger-line))}
+  .js .hero [data-load]{opacity:0;transform:translateY(12px);animation:load-rise 500ms var(--ease-out) forwards;animation-delay:var(--d)}
+  .js .shutter{clip-path:inset(0 0 100% 0);transition:clip-path 1100ms var(--ease-in-out-c)}
+  .js .shutter img{transform:scale(1.1);transition:transform 1500ms var(--ease-soft)}
+  .js .shutter.is-in{clip-path:inset(0)}
+  .js .shutter.is-in img{transform:none}
+  .js [data-reveal]{opacity:0;transform:translateY(24px);transition:opacity 700ms var(--ease-out),transform 900ms var(--ease-out);transition-delay:var(--d,0ms)}
+  .js [data-reveal].is-in{opacity:1;transform:none}
+  .js [data-reveal] [data-line]{transform:translateY(105%);transition:transform 900ms var(--ease-expo);transition-delay:calc(var(--i,0)*var(--stagger-line))}
+  .js [data-reveal].is-in [data-line]{transform:none}
+  .js .bands .band{opacity:0;transform:translateY(14px);animation:band-in 600ms var(--ease-out) forwards;animation-delay:var(--d,0ms)}
+}
+@keyframes line-up{to{transform:none}}
+@keyframes load-rise{to{opacity:1;transform:none}}
+@keyframes band-in{to{opacity:1;transform:none}}
+:root{--ease-in-out-c:cubic-bezier(.76,0,.24,1)}
+
+/* ПРИЖАТИЕ И НАВЕДЕНИЕ */
+.hero-btn,.hero-btn,.copy,.calc-chip,.primary,.price-table .btn,.tab,.tile.go{transition:transform var(--t-press) var(--ease-out),background-color var(--t-hover) ease,color var(--t-hover) ease}
+.hero-btn:active,.copy:active,.calc-chip:active,.primary:active,.price-table .btn:active,.tab:active,.tile.go:active{transform:scale(.97)}
+
+/* ФРАГМЕНТ: живой калькулятор */
+.calc{background:var(--bg);color:var(--ink);width:min(450px,100%);padding:26px}
+.calc-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.calc-title{font-size:15px;font-weight:500}
+.calc-read{font-size:13px;color:var(--muted);white-space:nowrap}
+.calc-row{margin-top:20px}
+.calc-label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px;gap:12px}
+.calc-label output{color:var(--ink);font-weight:500;white-space:nowrap}
+input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
+.calc-chips{display:flex;gap:8px;margin-top:14px}
+.calc-chip{flex:1;background:#f4f0ee;padding:10px 0;font-size:13px;text-align:center}
+.calc-chip:focus-visible{outline-offset:-3px}
+.calc-chip[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.calc-out{margin-top:22px;display:grid;gap:10px}
+.calc-kpi{background:var(--surface);padding:14px 16px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.calc-kpi b{font-size:26px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc-kpi span{font-size:13px;color:var(--muted-deep)}
+.calc-kpi:first-child{background:var(--ink);color:var(--bg)}
+.calc-kpi:first-child span{color:var(--paper)}
+.calc-note{margin-top:14px;font-size:13px;color:var(--muted);max-width:52ch}
+
+/* СЕКЦИИ */
+section{padding-left:var(--margin);padding-right:var(--margin)}
+.sec-gap{margin-top:var(--stack)}
+.sec-head{font-size:clamp(36px,4vw,60px);letter-spacing:-.035em;line-height:1.02}
+.sec-head .soft{color:var(--muted)}
+.sec-row{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+
+/* LIST: табы и полосы */
+#prompts .sec-row a{font-size:15px;font-weight:500;padding:12px 18px;background:var(--ink);color:var(--bg)}
+#prompts .sec-row a:hover{background:var(--accent);color:var(--accent-ink)}
+.tabs{margin-top:56px;display:flex;gap:6px;flex-wrap:wrap}
+.tab{width:150px;height:64px;background:var(--surface);display:flex;flex-direction:column;justify-content:center;padding:0 16px;text-align:left}
+.tab b{font-size:15px;font-weight:500}
+.tab span{font-size:13px;color:var(--muted-deep)}
+.tab[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.tab[aria-selected=true] span{color:var(--paper)}
+.bands{margin-top:8px;padding-left:190px;display:grid;gap:4px}
+.band{min-height:76px;background:var(--surface);border-radius:8px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:14px 20px;gap:18px}
+.band:nth-child(even){background:#dccfc9}
+.band .bb{font-size:15px;color:var(--muted);text-align:center}
+.band h3{font-size:17px;font-weight:500;letter-spacing:-.01em;line-height:1.25}
+.band p{font-size:13px;color:var(--muted-deep);margin-top:2px;line-height:1.4}
+.band .bc{justify-self:end;font-size:13px;color:var(--muted-deep);white-space:nowrap}
+
+/* SHOWCASE: половины вход-выход */
+.split{margin:0;background:var(--bg)}
+.split-wrap{display:grid;grid-template-columns:1fr 1fr}
+.split-in{background:var(--ink);color:var(--bg);padding:96px 40px;display:flex;flex-direction:column;justify-content:flex-end}
+.split-out{background:var(--surface);padding:96px 40px;display:grid;place-items:center}
+.split-in textarea{border:0;background:transparent;color:var(--bg);font:inherit;font-size:clamp(17px,1.5vw,24px);line-height:1.5;width:min(34ch,100%);resize:none;min-height:7.5em;margin-bottom:96px}
+.split-in textarea:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.split-in .split-label{color:var(--paper);font-size:13px}
+.split-in .split-note{font-size:13px;color:var(--paper);max-width:46ch}
+.split-h{display:grid;grid-template-columns:1fr 1fr;font-size:clamp(40px,5vw,80px);font-weight:300;letter-spacing:-.035em;line-height:1.0}
+.split-h > span{padding-left:var(--margin);padding-bottom:32px;padding-top:18px}
+.split-h > span:first-child{color:var(--bg);background:var(--ink)}
+.split-h > span:last-child{background:var(--surface)}
+.promo-card{background:var(--bg);padding:22px;width:min(480px,100%)}
+.promo-card .pt{font-size:15px;font-weight:500}
+.promo-card .pz{font-size:13px;color:var(--muted-deep);margin-top:2px}
+.promo-card .pp{margin-top:16px;font-size:15px;line-height:1.6}
+.promo-card .copy{margin-top:18px;width:100%;background:var(--ink);color:var(--bg);padding:14px 0;font-size:15px;font-weight:500}
+.promo-card .copy:hover{background:var(--accent);color:var(--accent-ink)}
+.promo-card .cnote{margin-top:12px;font-size:13px;color:var(--muted-deep)}
+
+/* ПОЛОСА ФОТО: две честные картинки */
+.duo{margin-top:var(--stack);padding-left:var(--margin);padding-right:var(--margin);display:grid;grid-template-columns:8fr 5fr;gap:8px}
+.duo figure.shutter{overflow:hidden}
+.duo img{width:100%;height:min(58vh,520px);object-fit:cover}
+.duo figcaption{margin-top:10px;font-size:15px;color:var(--muted);max-width:56ch}
+.duo .tape figcaption{margin-top:10px}
+
+/* PRICING: большая таблица */
+#pricing{margin-top:var(--stack)}
+.price-table{width:100%;border-collapse:collapse;margin-top:48px}
+.price-table th,.price-table td{padding:18px 20px;text-align:left;vertical-align:top}
+.price-table td:last-child{padding-right:0}
+.price-table thead th{font-size:clamp(22px,3vw,44px);font-weight:300;letter-spacing:-.03em;line-height:1.1}
+.price-table thead .p{font-weight:400;font-size:clamp(22px,3vw,44px)}
+.price-table thead .per{font-size:15px;font-weight:400;color:var(--muted-deep);display:block;letter-spacing:0;line-height:1.5}
+.price-table .l{font-size:22px;color:var(--muted-deep);width:22%}
+.price-table td{font-size:22px;line-height:1.35}
+.price-table tr:nth-child(odd) td{background:var(--surface)}
+.price-table tr:nth-child(odd) td.rec{background:var(--accent)}
+.price-table .lbl{display:none}
+.price-table .rec{background:var(--accent);color:var(--accent-ink)}
+.price-table .rec .p{color:var(--accent-ink)}
+.price-table .rec .per{color:#ecf7f0}
+.price-table .btn{display:block;width:100%;text-align:center;background:var(--accent);color:var(--accent-ink);padding:14px 22px;font-size:15px;font-weight:500}
+.price-table .btn:hover{background:var(--ink)}
+.price-table .dash{color:var(--muted-deep);font-size:15px}
+
+/* FAQ: плитки */
+.faq-grid{display:grid;grid-template-columns:4fr 8fr;gap:48px;margin-top:48px}
+.faq-grid h2{position:sticky;top:96px;align-self:start}
+.faq-tiles{display:grid;gap:8px}
+.details{background:var(--surface)}
+.details summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:0 24px;min-height:64px;font-size:17px;font-weight:500;cursor:pointer}
+.details summary::-webkit-details-marker{display:none}
+.plus{position:relative;width:16px;height:16px;flex:none}
+.plus::before,.plus::after{content:"";position:absolute;background:var(--ink)}
+.plus::before{left:6.5px;top:0;width:3px;height:16px}
+.plus::after{left:0;top:6.5px;width:16px;height:3px}
+.details[open]{background:var(--accent);color:var(--accent-ink)}
+.details[open] .plus::before{transform:rotate(90deg)}
+.details[open] .plus::before,.details[open] .plus::after{background:var(--accent-ink)}
+.details[open] summary{align-items:flex-start}
+.details .da{padding:0 24px 24px;max-width:min(52ch,100%);font-size:17px}
+
+/* CTA: диалог уже открыт */
+.cta{margin-top:var(--stack);background:var(--accent);color:var(--accent-ink);display:grid;grid-template-columns:1fr 1fr}
+.cta-left{padding:96px 40px;display:flex;flex-direction:column;justify-content:flex-end}
+.cta-line{font-size:clamp(44px,5vw,72px);font-weight:300;letter-spacing:-.035em;line-height:.98}
+.cta-sub{margin-top:20px;font-size:17px;max-width:38ch;color:#e6f4ec}
+.cta-right{display:grid;place-items:center;padding:96px 32px}
+.buy-dialog{background:var(--bg);color:var(--ink);width:min(440px,100%);justify-self:end;padding:24px;box-shadow:0 24px 60px rgba(20,15,10,.35) /* taste-skill-ignore: диалог покупки, настоящий оверлей */}
+.buy-dialog .bt{font-size:15px;font-weight:500}
+.buy-dialog input{margin-top:16px;background:#f4f0ee;padding:14px 12px;font-size:15px;width:100%;border:0}
+.buy-dialog .choose{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.buy-dialog .choose button{background:#f4f0ee;padding:12px 0;font-size:13px}
+.buy-dialog .choose button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.buy-dialog .primary{margin-top:20px;width:100%;background:var(--accent);color:var(--accent-ink);padding:16px 0;font-size:15px;font-weight:500;text-align:center}
+.buy-dialog .primary:hover{background:var(--ink)}
+.buy-dialog .hint{margin-top:12px;font-size:13px;color:var(--muted);max-width:44ch}
+
+/* FOOTER: плитки */
+footer{padding:32px;display:grid;grid-template-columns:repeat(12,1fr);gap:8px;margin-top:var(--stack)}
+.tile{background:var(--surface);padding:20px;min-height:220px;position:relative}
+.tile.statement{grid-column:span 4;display:flex;flex-direction:column;justify-content:space-between}
+.tile.statement p{font-size:22px;line-height:1.35}
+.tile.statement small{font-size:13px;color:var(--muted-deep)}
+.tile.photo{grid-column:span 3;padding:0;overflow:clip}
+.tile.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tile.nav{grid-column:span 3}
+.tile.nav ul{list-style:none;font-size:15px;display:grid;gap:8px;align-content:space-between;height:100%}
+.tile.nav a:hover{color:var(--accent)}
+.tile.mail{grid-column:span 2;display:flex;align-items:flex-end}
+.tile.mail a{font-size:20px;font-weight:500}
+.tile.mail a:hover{color:var(--accent)}
+.tile.word{grid-column:span 8;background:var(--ink);color:var(--bg);min-height:300px;display:grid;place-items:center}
+.tile.word p{font-size:clamp(48px,7vw,110px);font-weight:300;letter-spacing:-.03em}
+.tile.go{grid-column:span 4;background:var(--accent);color:var(--accent-ink);min-height:300px;display:flex;flex-direction:column;justify-content:space-between}
+.tile.go p{font-size:26px;font-weight:500;line-height:1.2;max-width:12ch}
+.tile.go svg{align-self:flex-end}
+@media (hover: hover) and (pointer: fine){
+  .tile.go:hover svg{transform:translateY(-4px)}
+  .tile.go svg{transition:transform var(--t-ui,240ms) var(--ease-out)}
+}
+.credits{padding:0 32px 28px;font-size:13px;color:var(--muted);max-width:80ch}
+
+/* ТЕЛЕФОН */
+@media (max-width:850px){
+  :root{--margin:20px}
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-left{padding:20px;justify-content:flex-start;min-height:auto}
+  .hero-right{background:var(--surface);padding:20px;min-height:auto}
+  .calc{width:88vw;max-width:420px;padding:18px}
+  .calc-kpi{padding:12px 14px}
+  .calc-kpi b{font-size:22px}
+  .calc-kpi span{font-size:13px}
+  .hero-sub{font-size:17px;max-width:none}
+  .mark,.hero-nav{display:none}
+  .split-h{grid-template-columns:1fr;font-size:11vw}
+  .split-in{padding:64px 20px}
+  .split-out{padding:64px 20px}
+  .split-in textarea{min-height:8em;margin-bottom:48px}
+  .tabs{gap:6px}
+  .tab{width:auto;flex:1 0 30%;height:56px}
+  .sec-head{font-size:28px}
+  .faq-grid h2{position:static;font-size:28px}
+  .cta-line{font-size:11vw}
+  .bands{padding-left:0;grid-template-columns:1fr}
+  .band{grid-template-columns:1fr;gap:6px;padding:16px}
+  .band .bb{display:none}
+  .band .bc{justify-self:start}
+  .duo{grid-template-columns:1fr}
+  .duo img{height:44vh}
+  .price-table thead{display:none}
+  .price-table,.price-table tbody,.price-table tr,.price-table td{display:block}
+  .price-table .l{display:none}
+  .price-table td .lbl{display:block;font-size:15px;color:var(--muted-deep)}
+  .price-table td{font-size:17px;max-width:60ch}
+  .price-table .rec{background:none;color:var(--ink)}
+  .price-table tr:nth-child(odd) td.rec{background:none}
+  .price-table .rec .per{color:var(--muted-deep)}
+  .price-table .recmark{background:var(--accent);color:var(--accent-ink);padding:6px 10px;display:inline-block;font-size:13px;margin-bottom:10px}
+  .price-table .btn{display:inline-block}
+  .faq-grid{grid-template-columns:1fr;gap:20px}
+  .faq-grid h2{position:static}
+  .details summary{font-size:17px;padding:0 20px;min-height:60px}
+  .details .da{padding:0 20px 20px;font-size:17px}
+  .cta{grid-template-columns:1fr}
+  .cta-left{order:-1;padding:64px 20px 8px}
+  .cta-right{padding:32px 20px 64px}
+  footer{grid-template-columns:1fr 1fr;padding:20px}
+  .tile{min-height:0;grid-column:span 1 !important}
+  .tile.photo{grid-column:span 2 !important;min-height:180px}
+  .tile.word,.tile.go{grid-column:span 2 !important;min-height:160px}
+  .tile.statement p{font-size:17px}
+  .tile.nav ul{height:auto;gap:6px}
+  .credits{padding:0 20px 24px}
+}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}.anim{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="hero-left" style="position:relative">
+    <p class="mark" data-load style="--d:0ms">Конверс-кит <small>· для селлеров</small></p>
+    <nav class="hero-nav" aria-label="Разделы страницы">
+      <a href="#prompts">Промпты</a>
+      <a href="#faq">Вопросы</a>
+      <a href="#buy">Купить · 490 ₽</a>
+    </nav>
+    <h1 class="lines">
+      <span class="line"><span data-line style="--i:0">Посчитай прибыль</span></span>
+      <span class="line"><span data-line style="--i:1">до закупки</span></span>
+    </h1>
+    <p class="hero-sub" data-load style="--d:420ms">Шестьдесят четыре промпта для карточек и живой калькулятор экономики. 490 ₽ один раз, файлы сразу после оплаты.</p>
+    <a class="hero-btn" href="#buy" data-load style="--d:520ms">Купить за 490 ₽</a>
+    <p class="crumbs" data-load style="--d:620ms">Подвинь любой из ползунков и увидишь результат сам.</p>
+  </div>
+  <div class="hero-right">
+    <div class="calc" data-ui data-load style="--d:480ms">
+      <div class="calc-head">
+        <span class="calc-title">Калькулятор экономики</span>
+        <span class="calc-read" id="calc-read">цена 1 900 ₽</span>
+      </div>
+      <div class="calc-row">
+        <div class="calc-label"><label for="h-price">Цена на карточке</label><output id="h-price-out">1 900 ₽</output></div>
+        <input type="range" id="h-price" min="300" max="5000" step="50" value="1900">
+      </div>
+      <div class="calc-row">
+        <div class="calc-label"><label for="h-cost">Закупка у поставщика</label><output id="h-cost-out">700 ₽</output></div>
+        <input type="range" id="h-cost" min="100" max="2000" step="10" value="700">
+      </div>
+      <div class="calc-chips" role="group" aria-label="Маркетплейс">
+        <button class="calc-chip" id="m-wb" aria-pressed="true">Wildberries</button>
+        <button class="calc-chip" id="m-ozon" aria-pressed="false">Ozon</button>
+      </div>
+      <div class="calc-out">
+        <div class="calc-kpi"><span>Прибыль за продажу</span><b id="h-profit">+320 ₽</b></div>
+        <div class="calc-kpi"><span>ROI на закупку</span><b id="h-roi">44 %</b></div>
+        <div class="calc-kpi"><span>Точка безубыточности, цена</span><b id="h-be">1 358 ₽</b></div>
+      </div>
+      <p class="calc-note" id="h-note">Упрощённо: комиссия 25 %, реклама 10 %, логистика 65 ₽, упаковка 15 ₽, возвраты 3 %, допуски 3 %, УСН 6 %. Полная версия умеет ещё УСН 15 % с прибыли и месячные фиксы. Она в комплекте.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="prompts" class="sec-gap">
+    <div class="sec-row" data-reveal>
+      <h2 class="sec-head" data-reveal style="--d:60ms"><span class="soft">Шестьдесят четыре</span><br>промпта на свои задачи</h2>
+      <a href="#buy" data-reveal style="--d:120ms">Купить комплект</a>
+    </div>
+    <div class="tabs" data-reveal role="tablist" aria-label="Разделы пула промптов" id="ptabs"></div>
+    <div class="bands" id="pbands" role="tabpanel"></div>
+  </section>
+
+  <div class="split-h" style="margin-top:var(--stack)">
+    <span><span data-line style="--i:0">Злой отзыв</span></span><span><span data-line style="--i:1">готовый ответ</span></span>
+  </div>
+  <section class="split" style="padding:0">
+    <div class="split-wrap">
+      <div class="split-in" data-reveal>
+        <label for="review" class="split-label">Вставь худший отзыв из своих: как есть, без смягчений.</label>
+        <textarea id="review">Пришло на пять дней позже даты, упаковка мянулась, на подарок уже не годится. Два часа пишу продавцу. Тишина.</textarea>
+        <p class="split-note">Промпт № 27 берёт этот текст и держит структуру: признать итог → что изменилось → что предложить.</p>
+      </div>
+      <div class="split-out" data-reveal style="--d:120ms">
+        <div class="promo-card" data-ui>
+          <p class="pt">Промпт № 27 · ответ на негатив по срокам</p>
+          <p class="pz">из раздела «Отзывы» · копируется кнопкой</p>
+          <p class="pp">Ты клиент-менеджер бренда [бренд] на Wildberries/Ozon. Отзыв: [вставь]. Суть претензии: [долго шла / испортилась упаковка / не поспел к дате]. Тон живой и спокойный, разбор по делу, без оправданий… Структура до 600 знаков: 1) извинись за итоговый опыт; 2) скажи, что вы реально изменили; 3) предложи то, что реально даёте.</p>
+          <button class="copy" id="copy-prompt">Скопировать промпт</button>
+          <p class="cnote" id="copy-note">Здесь открыты первые строки; полный текст промпта в комплекте.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="duo">
+    <figure class="shutter">
+      <img src="assets/fema-24316-photograph-by-liz-roll-taken.jpg" width="1920" height="1285" alt="Работник склада сверяет ячейки сканером штрихкодов" loading="lazy" decoding="async">
+      <figcaption>Склад, где каждая ячейка знает свою цифру. Карточка, которая тоже знает свои цифры, продаёт без сюрпризов.</figcaption>
+    </figure>
+    <figure class="shutter tape">
+      <img src="assets/brown-adhesive-tape.jpg" width="1920" height="1280" alt="Рулон коричневой упаковочной ленты крупным планом" loading="lazy" decoding="async">
+      <figcaption>Лента, коробка, сканер: один заказ проходит через всех них за пару минут.</figcaption>
+    </figure>
+  </section>
+
+  <section id="pricing" style="margin-top:var(--stack)">
+    <h2 class="sec-head" data-reveal><span class="soft">Три способа</span> закрыть задачи карточки</h2>
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th class="l">Как закрывать</th>
+          <th>Сам <span class="per">0 ₽, но силами</span></th>
+          <th>Копирайтер <span class="per">от 300 ₽ за карточку</span></th>
+          <th class="rec"><span class="p">Конверс-кит</span> <span class="per">490 ₽ один раз</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-reveal style="--d:0ms">
+          <td class="l">Что внутри</td>
+          <td><span class="lbl">Сам</span>Что придёт в голову</td>
+          <td><span class="lbl">Копирайтер</span>Только тексты</td>
+          <td class="rec"><span class="lbl">Конверс-кит</span><span class="recmark">один пакет · 490 ₽</span> <span style="display:block;margin-top:6px">64 промпта + калькулятор + гайд</span></td>
+        </tr>
+        <tr data-reveal style="--d:80ms">
+          <td class="l">Считает экономику до закупки</td>
+          <td><span class="lbl">Сам</span>На глаз</td>
+          <td class="dash" style="font-size:15px"><span class="lbl">Копирайтер</span>не входит в задачу</td>
+          <td class="rec"><span class="lbl">Конверс-кит</span>Да: прибыль, ROI, точка безубыточности</td>
+        </tr>
+        <tr data-reveal style="--d:160ms">
+          <td class="l">Риск выдуманных фактов</td>
+          <td><span class="lbl">Сам</span>Нулевой, но и качества ноль</td>
+          <td><span class="lbl">Копирайтер</span>Как попадёт</td>
+          <td class="rec"><span class="lbl">Конверс-кит</span>Промпты прямо запрещают выдумывать характеристики</td>
+        </tr>
+        <tr data-reveal style="--d:240ms">
+          <td class="l">Куда идут файлы</td>
+          <td class="dash">файлов нет</td>
+          <td class="dash">файлов нет</td>
+          <td class="rec"><a class="btn" href="#buy">Купить за 490 ₽</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="faq" class="sec-gap">
+    <div class="faq-grid">
+      <h2 class="sec-head" data-reveal>Вопросы до покупки</h2>
+      <div class="faq-tiles">
+        <details class="details" name="faq" open data-reveal style="--d:0ms">
+          <summary>На какие нейросети подходят промпты?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">ChatGPT, DeepSeek, Gemini, Алиса, ЯндексGPT. Структура «роль → задача → формат → запреты» работает в любой модели.</div>
+        </details>
+        <details class="details" name="faq" data-reveal style="--d:70ms">
+          <summary>Что именно внутри за 490 рублей?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">Каталог с 64 промптами по восьми разделам, офлайн-калькулятор юнит-экономики, гайд «как выжать максимум» и чек-лист выкладки карточки.</div>
+        </details>
+        <details class="details" name="faq" data-reveal style="--d:140ms">
+          <summary>Файлы придут как?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">Сразу после оплаты: электронная доставка площадки или ссылка. Открывается в любом браузере, интернет после скачивания уже не нужен.</div>
+        </details>
+        <details class="details" name="faq" data-reveal style="--d:210ms">
+          <summary>Калькулятор не врёт?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">Считает по тем же формулам, что применяют в экономике селлера: комиссия, продвижение, логистика, возвраты, допуски, налог. Честность результата зависит только от твоих входных цифр.</div>
+        </details>
+        <details class="details" name="faq" data-reveal style="--d:280ms">
+          <summary>А если экономика не сходится?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">Тогда лучше узнать это до закупки: точка безубыточности показывает цену, ниже которой идут убытки, а полный калькулятор считает продажи в штуках. Дальше решать тебе.</div>
+        </details>
+        <details class="details" name="faq" data-reveal style="--d:350ms">
+          <summary>Промпты можно под себя поменять?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="da">И нужно: меняй нишу, тон и формат ответа, подставь свои переменные вместо [квадратных скобок]. Структуру держи: роль, задача, формат, запреты.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="buy" class="cta">
+    <div class="cta-left" data-reveal>
+      <p class="cta-line lines"><span class="line"><span data-line style="--i:0">Цифры раньше</span></span><span class="line"><span data-line style="--i:1">товара</span></span></p>
+      <p class="cta-sub" data-reveal style="--d:160ms">Пока другие закупают наугад, ты видишь цену безубыточности до оплаты поставщику.</p>
+    </div>
+    <div class="cta-right" data-reveal style="--d:120ms">
+      <div class="buy-dialog" data-ui>
+        <p class="bt">Что у тебя на продаже?</p>
+        <input id="buy-what" type="text" value="термокружка 500 мл" aria-label="Что у тебя на продаже">
+        <div class="choose" role="group" aria-label="Маркетплейс">
+          <button aria-pressed="true" data-m="wb">Wildberries</button>
+          <button aria-pressed="false" data-m="ozon">Ozon</button>
+        </div>
+        <a class="primary" id="buy-btn" href="#" data-note="Заменить ссылкой на объявление после публикации">Купить комплект за 490 ₽</a>
+        <p class="hint" id="buy-feedback">Откроется страница объявления; файлы придут сразу после оплаты.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="tile statement">
+    <p>Файлы приходят сразу после оплаты и работают офлайн.</p>
+    <small>Продажу и возврат ведёт площадка объявления. Комплект цифровой: если файлы не открылись, напиши в чат объявления, вышлем заново.</small>
+    <small>Москва, <b id="clock">--:--</b></small>
+  </div>
+  <div class="tile photo">
+    <img src="assets/paketbandabroller0.jpg" width="1920" height="1440" alt="Диспенсер с упаковочной лентой на картонной коробке" loading="lazy" decoding="async">
+  </div>
+  <div class="tile nav">
+    <ul>
+      <li><a href="#prompts">Промпты</a></li>
+      <li><a href="#top">Калькулятор</a></li>
+      <li><a href="#faq">Вопросы</a></li>
+      <li><a href="#buy">Купить за 490 ₽</a></li>
+    </ul>
+  </div>
+  <div class="tile mail">
+    <a href="https://t.me/" id="mail-link" data-note="Вставить ссылку на ТГ или ВК после публикации объявления">Связаться</a>
+  </div>
+  <div class="tile word">
+    <p>Конверс-кит</p>
+  </div>
+  <a class="tile go" href="#top">
+    <p>Прокалькулируй свой товар</p>
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+      <path d="M22 38V10M22 10L10 22M22 10l12 12" stroke="currentColor" stroke-width="4"/>
+    </svg>
+  </a>
+</footer>
+<p class="credits">Фото: склад — Liz Roll (public domain), лента — Sarang (public domain), лента коричневая — Wikimedia Commons, CC BY-SA 4.0. Точные авторы: assets/credits.json.</p>
+
+<script>
+/* разделы пула: реальные названия промптов из комплекта */
+const P = {
+  "Карточки":{b:"названия, заголовки, SEO", t:["Сбор SEO-ядра для нового товара","Название карточки для Wildberries","Название карточки для Ozon","Ключи и боли из отзывов конкурентов"]},
+  "Описания":{b:"продающие тексты", t:["Продающее описание для Wildberries","Rich-контент для Ozon","Приговор по формуле «проблема — решение»","Три версии описания для A/B-теста"]},
+  "Характеристики":{b:"буллеты, FAQ, честные минусы", t:["Преимущества буллетами: факт + выгода","Минус товара через выгоду","FAQ для карточки","Слабый параметр: как записать честно"]},
+  "Отзывы":{b:"ответы покупателям", t:["Тёплый ответ на хвалебный отзыв","Негатив по качеству: без оправданий","Негатив по доставке или срокам","Оценка-единичка без текста"]},
+  "Конкуренты":{b:"анализ и позиционирование", t:["Разбор карточки топ-конкурента","Чужие минусы в свои буллеты","УТП и отстройка без демпинга","Ценовая позиция и её обоснование"]},
+  "Соцсети":{b:"контент бренда", t:["Контент-план на месяц","Пост-обзор товара: два захода","Десять идей для Reels","Сценарий Reels с таймкодами"]},
+  "Реклама":{b:"промо и посевы", t:["Тексты для посевов","Реклама внутри маркетплейса","Акция: механика и анонс","Конкурс с блогером"]},
+  "Служебное":{b:"инфостиль и рутина", t:["Мини-гайд по инфостилю бренда","Сжать описание под лимит","Чек-лист выкладки на WB","Диагностика «карточка есть, продаж нет»"]}
+};
+const tabsEl = document.getElementById("ptabs");
+const bandsEl = document.getElementById("pbands");
+const NAMES = Object.keys(P);
+let current = NAMES[0];
+NAMES.forEach((name, i) => {
+  const b = document.createElement("button");
+  b.className = "tab";
+  b.dataset.tab = name;
+  b.setAttribute("role", "tab");
+  b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+  b.tabIndex = i === 0 ? 0 : -1;
+  b.id = "tab-" + i;
+  b.innerHTML = "<b>" + name + "</b><span>" + P[name].b + "</span>";
+  b.addEventListener("click", () => { setTab(name); });
+  tabsEl.appendChild(b);
+});
+function setTab(name){
+  current = name;
+  [...tabsEl.children].forEach(b => {
+    const on = b.dataset.tab === name;
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    b.tabIndex = on ? 0 : -1;
+  });
+  bandsEl.setAttribute("aria-labelledby", "tab-" + NAMES.indexOf(name));
+  bandsEl.innerHTML = "";
+  P[name].t.forEach((title, i) => {
+    const d = document.createElement("div");
+    d.className = "band";
+    d.style.setProperty("--d", (i * 70) + "ms");
+    d.innerHTML = '<span class="bb" aria-hidden="true">•</span><div><h3>' + title + '</h3><p>' + P[name].b + '</p></div><span class="bc">в комплекте</span>';
+    bandsEl.appendChild(d);
+  });
+}
+tabsEl.addEventListener("keydown", e => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const dir = e.key === "ArrowRight" ? 1 : -1;
+  setTab(NAMES[(NAMES.indexOf(current) + dir + NAMES.length) % NAMES.length]);
+  tabsEl.querySelector('[aria-selected="true"]').focus();
+  e.preventDefault();
+});
+setTab(current);
+
+/* калькулятор: та же модель, что в полном файле комплекта. Закупка с допусками 3 %, упаковка 15 ₽, УСН 6 % */
+const M = {
+  wb:  {com:25, adv:10, log:65, ret:3},
+  ozon:{com:17, adv:10, log:45, ret:4}
+};
+const TAX = 0.06, PACK = 15;
+let mkt = "wb";
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("ru-RU", {maximumFractionDigits:0});
+function calc(){
+  const m = M[mkt], Pr = +$("h-price").value, C = +$("h-cost").value;
+  const eff = C * 1.03;
+  const k = 1 - (m.com + m.adv) / 100 - TAX;
+  const profit = Pr * k - m.log - PACK - eff;
+  const roi = eff > 0 ? profit / eff * 100 : 0;
+  const be = k > 0 ? (m.log + PACK + eff) / k : Infinity;
+  $("h-profit").textContent = (profit >= 0 ? "+" : "−") + fmt(Math.abs(profit)) + " ₽";
+  $("h-roi").textContent = fmt(roi) + " %";
+  $("h-be").textContent = be === Infinity ? "не окупается" : fmt(be) + " ₽";
+  $("h-price-out").textContent = fmt(Pr) + " ₽";
+  $("h-cost-out").textContent = fmt(C) + " ₽";
+  $("calc-read").textContent = "цена " + fmt(Pr) + " ₽";
+}
+const NOTE = {
+  wb: "Упрощённо: комиссия 25 %, реклама 10 %, логистика 65 ₽, упаковка 15 ₽, возвраты 3 %, допуски 3 %, УСН 6 % с оборота. Полная версия умеет ещё УСН 15 % с прибыли и месячные фиксы. Она в комплекте.",
+  ozon: "Упрощённо: комиссия 17 %, реклама 10 %, логистика 45 ₽, упаковка 15 ₽, возвраты 4 %, допуски 3 %, УСН 6 % с оборота. Полная версия умеет ещё УСН 15 % с прибыли и месячные фиксы. Она в комплекте."
+};
+["h-price","h-cost"].forEach(id => $(id).addEventListener("input", calc));
+$("m-wb").addEventListener("click", () => {
+  mkt = "wb";
+  $("m-wb").setAttribute("aria-pressed","true");
+  $("m-ozon").setAttribute("aria-pressed","false");
+  $("h-note").textContent = NOTE.wb;
+  calc();
+});
+$("m-ozon").addEventListener("click", () => {
+  mkt = "ozon";
+  $("m-ozon").setAttribute("aria-pressed","true");
+  $("m-wb").setAttribute("aria-pressed","false");
+  $("h-note").textContent = NOTE.ozon;
+  calc();
+});
+calc();
+
+/* копирование промпта № 27: полный текст, как в файле комплекта */
+$("copy-prompt").addEventListener("click", () => {
+  const t = "Ты клиент-менеджер бренда [бренд] на Wildberries/Ozon. Отзыв: [вставь]. Суть претензии: [долго шла / испортилась упаковка / не поспел к дате]. Тон живой и спокойный, разбор по делу, без оправданий и глухого молчания: пиши так, как будто читаешь вслух. Структура до 600 знаков: 1) извинись за итоговый опыт, даже если пакет мнётся на складе площадки: не перекладывай вину первой строкой; 2) скажи, что вы реально изменили ([вставь: усиление упаковки, сменный поставщик и т.п.] — если ничего не менялось, не пиши «работаем над этим»); 3) предложи то, что реально даёте: [промокод / подарок к следующему заказу / вручную подскажи, как оформить возврат].";
+  const ok = () => { $("copy-note").textContent = "Скопировано. Полный каталог из 64 промптов в комплекте."; };
+  const no = () => { $("copy-note").textContent = "Не получилось, выделяй вручную. Полный текст в комплекте."; };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, no);
+  else no();
+});
+
+/* диалог покупки: выбор маркетплейса и товар уточняют подсказку */
+const MKT_NAME = { wb: "Wildberries", ozon: "Ozon" };
+let dmkt = "wb";
+const dchips = document.querySelectorAll(".choose button");
+function refreshHint(){
+  const v = $("buy-what").value.trim();
+  $("buy-feedback").textContent = v
+    ? "«" + v + "» · " + MKT_NAME[dmkt] + ". Расчёт для своего товара уже лежит в комплекте: покупай, пока экономика сходится."
+    : "Откроется страница объявления; файлы придут сразу после оплаты.";
+}
+dchips.forEach(b => b.addEventListener("click", () => {
+  dmkt = b.dataset.m;
+  dchips.forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  refreshHint();
+}));
+$("buy-what").addEventListener("input", refreshHint);
+refreshHint();
+
+/* вход по скроллу: один раз, читаемый поток */
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+}, { rootMargin: "0px 0px -12% 0px", threshold: 0.1 });
+document.querySelectorAll("[data-reveal], .shutter").forEach(el => io.observe(el));
+
+/* часы в подвале */
+const clk = $("clock");
+function tick(){ const d = new Date(); clk.textContent = d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"}); }
+tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>
